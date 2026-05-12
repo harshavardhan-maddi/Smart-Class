@@ -34,17 +34,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const fetchSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        setUser(session.user);
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", session.user.id)
-          .single();
-        setProfile(profile);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          setUser(session.user);
+          const { data: profileData } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", session.user.id)
+            .single();
+          setProfile(profileData);
+        }
+      } catch (err) {
+        console.error("Auth session error:", err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     fetchSession();
@@ -52,12 +57,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       setUser(session?.user ?? null);
       if (session) {
-        const { data: profile } = await supabase
+        const { data: profileData } = await supabase
           .from("profiles")
           .select("*")
           .eq("id", session.user.id)
           .single();
-        setProfile(profile);
+        setProfile(profileData);
       } else {
         setProfile(null);
       }
@@ -68,9 +73,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const login = async (email: string, password?: string) => {
-    if (!password) return false;
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return !error;
+    if (!password) return null;
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error || !data.user) return null;
+
+    // Immediately fetch profile after successful login
+    const { data: profileData } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", data.user.id)
+      .single();
+    
+    return profileData;
   };
 
   const logout = async () => {

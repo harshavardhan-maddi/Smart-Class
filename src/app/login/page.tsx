@@ -21,21 +21,19 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const success = await login(email, password);
+      const profileData = await login(email, password);
 
-      if (success) {
-        // Fetch fresh profile to redirect correctly
-        const savedUser = storage.get("current_user");
-        if (savedUser.role === "admin") {
+      if (profileData) {
+        if (profileData.role === "admin") {
           router.push("/admin/dashboard");
         } else {
           router.push("/cr/dashboard");
         }
       } else {
-        setError("Invalid demo credentials. Use admin@college.com");
+        setError("Invalid email or password. Please ensure your account exists in Supabase.");
       }
     } catch (err: any) {
-      setError("Authentication failed.");
+      setError("Authentication failed. Please check your connection.");
     } finally {
       setLoading(false);
     }

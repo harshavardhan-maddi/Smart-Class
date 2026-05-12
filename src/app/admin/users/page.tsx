@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { storage } from "@/lib/storage";
+import { supabase } from "@/lib/supabase";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   UserPlus, 
@@ -30,40 +30,43 @@ export default function CRManagement() {
   });
 
   useEffect(() => {
-    const fetchData = () => {
-      const uData = storage.get("users") || {};
-      setUsers(Object.values(uData));
-      setClassrooms(storage.get("classrooms") || []);
+    const fetchData = async () => {
+      const { data: profileData } = await supabase.from("profiles").select("*").eq("role", "cr");
+      const { data: clsData } = await supabase.from("classrooms").select("*");
+      setUsers(profileData || []);
+      setClassrooms(clsData || []);
     };
     fetchData();
-    return storage.onUpdate(fetchData);
+
+    const channel = supabase.channel("profiles_changes").on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, fetchData).subscribe();
+    return () => { channel.unsubscribe(); };
   }, []);
 
-  const handleCreateUser = (e: React.FormEvent) => {
+  const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    const uData = storage.get("users") || {};
-    const uid = `cr_${Date.now()}`;
-    
     const selectedClassroom = classrooms.find(c => c.id === formData.assignedClassroomId);
 
-    const newUser = {
-      uid,
-      ...formData,
+    // Note: Creating actual Auth users requires Supabase Admin API or signUp
+    // For this implementation, we assume the user is created in Supabase Auth dashboard
+    // and we are just linking the profile here.
+    const { error } = await supabase.from("profiles").upsert({
+      email: formData.email,
+      name: formData.name,
       role: "cr",
-      assignedClassroomName: selectedClassroom?.name || "Unknown"
-    };
+      assigned_classroom_id: formData.assignedClassroomId,
+      // We use email as a temporary ID if we don't have the UUID yet, 
+      // but ideally we should use the UUID from Auth.
+      // However, upserting by email is a common pattern for pre-provisioning.
+    });
 
-    uData[uid] = newUser;
-    storage.set("users", uData);
-    
-    setIsModalOpen(false);
-    setFormData({ name: "", email: "", password: "", assignedClassroomId: "" });
+    if (!error) {
+      setIsModalOpen(false);
+      setFormData({ name: "", email: "", password: "", assignedClassroomId: "" });
+    }
   };
 
-  const handleDeleteUser = (uid: string) => {
-    const uData = storage.get("users") || {};
-    delete uData[uid];
-    storage.set("users", uData);
+  const handleDeleteUser = async (id: string) => {
+    await supabase.from("profiles").delete().eq("id", id);
   };
 
   const filteredUsers = users.filter(u => 
@@ -117,45 +120,48 @@ export default function CRManagement() {
       {/* Users Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
         <AnimatePresence>
-          {filteredUsers.map((user) => (
-            <motion.div
-              key={user.uid}
-              layout
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="glass-card-premium group"
-            >
-              <div className="flex justify-between items-start mb-6">
-                <div className="w-14 h-14 bg-gradient-to-tr from-white/10 to-white/5 rounded-2xl flex items-center justify-center text-white/40 group-hover:text-primary group-hover:bg-primary/10 transition-all duration-500">
-                  <ShieldCheck size={28} />
+          {filteredUsers.map((user) => {
+            const classroomName = classrooms.find(c => c.id === user.assigned_classroom_id)?.name || "Not Assigned";
+            return (
+              <motion.div
+                key={user.id || user.email}
+                layout
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="glass-card-premium group"
+              >
+                <div className="flex justify-between items-start mb-6">
+                  <div className="w-14 h-14 bg-gradient-to-tr from-white/10 to-white/5 rounded-2xl flex items-center justify-center text-white/40 group-hover:text-primary group-hover:bg-primary/10 transition-all duration-500">
+                    <ShieldCheck size={28} />
+                  </div>
+                  <button 
+                    onClick={() => handleDeleteUser(user.id)}
+                    className="p-3 text-white/10 hover:text-danger hover:bg-danger/10 rounded-xl transition-all"
+                  >
+                    <Trash2 size={18} />
+                  </button>
                 </div>
-                <button 
-                  onClick={() => handleDeleteUser(user.uid)}
-                  className="p-3 text-white/10 hover:text-danger hover:bg-danger/10 rounded-xl transition-all"
-                >
-                  <Trash2 size={18} />
-                </button>
-              </div>
 
-              <div className="space-y-1 mb-6">
-                <h3 className="text-2xl font-black text-white tracking-tight">{user.name}</h3>
-                <p className="text-white/30 text-sm font-medium flex items-center gap-2">
-                  <Mail size={14} /> {user.email}
-                </p>
-              </div>
+                <div className="space-y-1 mb-6">
+                  <h3 className="text-2xl font-black text-white tracking-tight">{user.name}</h3>
+                  <p className="text-white/30 text-sm font-medium flex items-center gap-2">
+                    <Mail size={14} /> {user.email}
+                  </p>
+                </div>
 
-              <div className="pt-6 border-t border-white/5 flex items-center gap-3">
-                <div className="w-8 h-8 bg-success/10 rounded-lg flex items-center justify-center text-success">
-                  <School size={16} />
+                <div className="pt-6 border-t border-white/5 flex items-center gap-3">
+                  <div className="w-8 h-8 bg-success/10 rounded-lg flex items-center justify-center text-success">
+                    <School size={16} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-white/20 uppercase tracking-widest">Assigned Class</p>
+                    <p className="text-white font-bold text-sm tracking-tight">{classroomName}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[10px] font-black text-white/20 uppercase tracking-widest">Assigned Class</p>
-                  <p className="text-white font-bold text-sm tracking-tight">{user.assignedClassroomName}</p>
-                </div>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </AnimatePresence>
       </div>
 
