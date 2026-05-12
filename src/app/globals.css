@@ -1,0 +1,154 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #020617;
+  --color-foreground: #f8fafc;
+  --color-primary: #3b82f6;
+  --color-primary-glow: rgba(59, 130, 246, 0.5);
+  --color-accent: #8b5cf6;
+  --color-accent-glow: rgba(139, 92, 246, 0.5);
+  --color-success: #10b981;
+  --color-danger: #ef4444;
+  --color-warning: #f59e0b;
+
+  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-glow-red: glowRed 2s ease-in-out infinite;
+  --animate-glow-green: glowGreen 2s ease-in-out infinite;
+  --animate-spin-slow: spin 8s linear infinite;
+
+  @keyframes glowRed {
+    0%, 100% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.4); }
+    50% { box-shadow: 0 0 40px rgba(239, 68, 68, 0.6); }
+  }
+  @keyframes glowGreen {
+    0%, 100% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.4); }
+    50% { box-shadow: 0 0 40px rgba(16, 185, 129, 0.6); }
+  }
+}
+
+@layer base {
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    min-height: 100vh;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    overflow-x: hidden;
+  }
+}
+
+/* Premium Mesh Background */
+.mesh-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  background-color: #020617;
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%),
+    radial-gradient(at 50% 50%, rgba(15, 23, 42, 1) 0px, transparent 80%),
+    radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.1) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(139, 92, 246, 0.1) 0px, transparent 50%);
+  background-attachment: fixed;
+}
+
+@utility glass-container {
+  background-color: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+@utility glass-card-premium {
+  background-color: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  border-radius: 2rem;
+  padding: 2rem;
+  transition: all 500ms;
+}
+
+@utility premium-gradient-text {
+  background-clip: text;
+  color: transparent;
+  background-image: linear-gradient(to right, white, rgba(255, 255, 255, 0.7));
+}
+
+@utility premium-input {
+  background-color: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  padding: 1rem 1.25rem;
+  color: white;
+  transition: all 300ms;
+  
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
+    background-color: rgba(255, 255, 255, 0.06);
+  }
+}
+
+@utility premium-button-base {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem 2rem;
+  border-radius: 1rem;
+  font-weight: 700;
+  transition: all 500ms;
+  
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+@utility btn-primary-premium {
+  @apply premium-button-base;
+  background-image: linear-gradient(to bottom right, #3b82f6, #8b5cf6);
+  color: white;
+  box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.2);
+}
+
+@utility btn-secondary-premium {
+  @apply premium-button-base;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+@utility sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: 1rem;
+  transition: all 300ms;
+}
+
+/* Animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
