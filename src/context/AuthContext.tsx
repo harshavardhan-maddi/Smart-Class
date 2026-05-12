@@ -15,7 +15,7 @@ interface AuthContextType {
   user: any | null;
   profile: UserProfile | null;
   loading: boolean;
-  login: (email: string, password?: string) => Promise<boolean>;
+  login: (email: string, password?: string) => Promise<UserProfile | null>;
   logout: () => void;
 }
 
@@ -23,7 +23,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   profile: null,
   loading: true,
-  login: async () => false,
+  login: async () => null,
   logout: () => {},
 });
 
